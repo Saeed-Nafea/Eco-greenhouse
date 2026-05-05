@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeafLink - Plant Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080e10;
+  --side:#121a1d;
+  --side2:#182124;
+  --top:#11191c;
+  --card:#121a1d;
+  --card2:#161f22;
+  --line:rgba(255,255,255,.095);
+  --line2:rgba(255,255,255,.16);
+  --text:#edf7f5;
+  --muted:#a3adb1;
+  --soft:#667279;
+  --brand:#24d37b;
+  --brand2:#0ea5e9;
+  --blue:#0891ff;
+  --orange:#ff8a25;
+  --red:#ff3f5e;
+  --green:#16d33a;
+  --yellow:#facc15;
+  --shadow:0 24px 70px rgba(0,0,0,.38);
+  --r:13px;
+  --font:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+body.light{
+  --bg:#f3f7f5;
+  --side:#ffffff;
+  --side2:#f3f7f5;
+  --top:#ffffff;
+  --card:#ffffff;
+  --card2:#f8fbfa;
+  --line:rgba(15,23,42,.10);
+  --line2:rgba(15,23,42,.18);
+  --text:#10211d;
+  --muted:#64748b;
+  --soft:#94a3b8;
+  --shadow:0 16px 45px rgba(15,23,42,.08);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;color-scheme:dark;overflow:hidden}
+button,a,input{font:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:306px 1fr;height:100vh;overflow:hidden}
+.sidebar{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.brand-row{height:66px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line)}
+.logo{width:42px;height:42px;border-radius:15px;background:linear-gradient(135deg,var(--brand),#0f766e);display:grid;place-items:center;box-shadow:0 14px 32px rgba(36,211,123,.20);position:relative;overflow:hidden}
+.logo:before{content:"";width:24px;height:14px;border:3px solid rgba(255,255,255,.92);border-right:0;border-radius:50px 0 0 50px;transform:rotate(20deg);position:absolute;left:8px;top:12px}
+.logo:after{content:"";width:27px;height:3px;background:rgba(255,255,255,.92);border-radius:99px;transform:rotate(-19deg);position:absolute;left:8px;top:22px}
+.brand-title{font-size:22px;font-weight:900;letter-spacing:-.05em;line-height:1}.brand-sub{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--soft);margin-top:4px}.brand-arrow{margin-left:auto;color:var(--muted);font-size:22px}
+.nav-scroll{overflow:auto;padding:18px 12px 90px;scrollbar-width:thin}.nav-group-label{font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:.12em;font-weight:800;margin:20px 0 8px;padding:0 4px}
+.nav-item,.nav-leaf{width:100%;min-height:44px;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;gap:11px;text-align:left;padding:10px 14px;border-radius:7px;font-weight:750;transition:.16s}.nav-item:hover,.nav-leaf:hover{color:var(--text);background:rgba(255,255,255,.055)}body.light .nav-item:hover,body.light .nav-leaf:hover{background:rgba(15,23,42,.055)}.nav-item.active,.nav-leaf.active{background:rgba(255,255,255,.105);color:var(--text)}body.light .nav-item.active,body.light .nav-leaf.active{background:#e9f8ef;color:#0f766e}.nav-ico{width:24px;display:grid;place-items:center;font-size:19px;opacity:.92}.chev{margin-left:auto;color:var(--soft);transition:.18s}.chev.open{transform:rotate(90deg)}.nested{display:none;margin:4px 0 4px 22px;padding-left:10px;border-left:1px solid var(--line)}.nested.open{display:block}.plant-node{margin:2px 0}.plant-head{width:100%;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;gap:9px;text-align:left;padding:9px 10px;border-radius:7px;font-weight:800}.plant-head:hover{background:rgba(255,255,255,.055);color:var(--text)}.plant-head.active{background:rgba(36,211,123,.13);color:var(--brand)}.plant-icon{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:var(--side2)}.plant-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sub-link{width:100%;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;gap:8px;text-align:left;padding:8px 10px 8px 34px;border-radius:7px;font-size:13px;font-weight:750}.sub-link:hover,.sub-link.active{background:rgba(255,255,255,.07);color:var(--text)}body.light .sub-link:hover,body.light .sub-link.active{background:#f1f5f9;color:#0f766e}.side-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--soft);background:rgba(0,0,0,.12)}body.light .side-footer{background:#f8fafc}.main{display:grid;grid-template-rows:66px 1fr 42px;min-width:0;overflow:hidden;background:radial-gradient(circle at top right,rgba(8,145,255,.14),transparent 34rem),radial-gradient(circle at bottom left,rgba(36,211,123,.10),transparent 30rem),var(--bg)}.topbar{display:flex;align-items:center;gap:12px;padding:0 22px;background:var(--top);border-bottom:1px solid var(--line)}.crumbs{display:flex;align-items:center;gap:9px;min-width:0;font-weight:850}.crumb-main{font-size:16px;white-space:nowrap}.crumb-sub{font-family:var(--mono);font-size:11px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.top-actions{margin-left:auto;display:flex;align-items:center;gap:9px}.top-btn{height:38px;border:1px solid var(--line2);background:var(--card2);color:var(--text);border-radius:9px;padding:0 13px;font-weight:850;display:flex;align-items:center;gap:8px}.top-btn:hover{border-color:rgba(36,211,123,.5);box-shadow:0 0 0 4px rgba(36,211,123,.08)}.top-btn.active{background:rgba(36,211,123,.14);color:var(--brand);border-color:rgba(36,211,123,.42)}.top-btn.save{color:#bfdbfe}.content{overflow:auto;padding:24px;min-width:0}.footer{display:flex;align-items:center;justify-content:center;border-top:1px solid var(--line);background:rgba(17,25,28,.9);color:var(--muted);font-family:var(--mono);font-size:12px}body.light .footer{background:#fff}.status-strip{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:13px;margin-bottom:18px}.status-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;box-shadow:0 12px 38px rgba(0,0,0,.12)}.status-label{font-family:var(--mono);font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.11em;font-weight:800}.status-value{margin-top:7px;display:flex;align-items:center;gap:9px;font-size:15px;font-weight:900;min-width:0}.status-value span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dot{width:10px;height:10px;border-radius:999px;background:var(--soft);flex:0 0 auto}.dot.live{background:var(--green);box-shadow:0 0 0 7px rgba(22,211,58,.12);animation:pulse 1.8s infinite}.dot.warn{background:var(--yellow);box-shadow:0 0 0 7px rgba(250,204,21,.12)}.dot.off{background:var(--red);box-shadow:0 0 0 7px rgba(255,63,94,.12)}@keyframes pulse{50%{opacity:.5;transform:scale(.72)}}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}.page-title h1{margin:0;font-size:26px;line-height:1;font-weight:950;letter-spacing:-.055em}.page-title p{margin:8px 0 0;color:var(--muted);font-family:var(--mono);font-size:12px}.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}.panel-head{height:62px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px}.panel-title{font-size:17px;font-weight:900}.panel-sub{font-family:var(--mono);font-size:11px;color:var(--soft);margin-top:3px}.dots{font-size:23px;color:var(--muted);line-height:0}.grid{display:grid;gap:16px}.graphs-grid{display:grid;grid-template-columns:1fr;gap:18px}.graph-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}.graph-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}.graph-title{font-size:17px;font-weight:900}.graph-reading{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}.graph-value{font-size:22px;font-weight:950;color:var(--text)}.legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted)}.leg{display:flex;align-items:center;gap:7px}.leg-line{width:28px;border-top:2px dashed}.leg-red{border-color:var(--red)}.leg-green{border-color:var(--green)}.chart-large{height:360px;padding:18px 22px 22px}.live-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}.live-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;min-height:245px}.live-card.alert{border-color:rgba(250,204,21,.42);background:linear-gradient(180deg,rgba(250,204,21,.09),var(--card))}.live-card.danger{border-color:rgba(255,63,94,.50);background:linear-gradient(180deg,rgba(255,63,94,.10),var(--card))}.live-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.sensor-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--soft);font-weight:900}.sensor-badge{font-family:var(--mono);font-size:10px;font-weight:900;padding:5px 8px;border-radius:99px;background:rgba(22,211,58,.13);color:var(--green)}.sensor-badge.warn{background:rgba(250,204,21,.14);color:var(--yellow)}.sensor-badge.danger{background:rgba(255,63,94,.15);color:var(--red)}.gauge-wrap{display:grid;place-items:center}.gauge{--pct:0deg;--accent:var(--brand);width:158px;height:158px;border-radius:999px;display:grid;place-items:center;background:conic-gradient(var(--accent) 0deg,var(--accent) var(--pct),rgba(255,255,255,.08) var(--pct),rgba(255,255,255,.08) 360deg);position:relative}.gauge:before{content:"";position:absolute;inset:10px;border-radius:inherit;background:var(--card);border:1px solid var(--line)}.gauge-core{position:relative;text-align:center}.gauge-core b{display:block;font-size:26px;font-weight:950}.gauge-core span{display:block;font-family:var(--mono);font-size:10px;color:var(--soft);text-transform:uppercase}.sensor-reading{text-align:center;margin-top:12px;font-family:var(--mono);font-size:13px;color:var(--muted)}.sensor-reading strong{font-family:var(--font);font-size:23px;color:var(--text)}.range-note{margin-top:12px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--soft);line-height:1.6}.setpoint-panel{padding:20px}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}.field{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:15px}.field label{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.11em;color:var(--soft);font-weight:900;margin-bottom:10px}.range-row{display:flex;align-items:center;gap:8px}.range-row input,.field input{width:100%;height:40px;background:var(--bg);border:1px solid var(--line2);color:var(--text);border-radius:9px;padding:0 10px;font-family:var(--mono);font-weight:800}.range-row span{font-family:var(--mono);font-size:11px;color:var(--soft)}.target-input{border-color:rgba(22,211,58,.38)!important;background:rgba(22,211,58,.08)!important;color:var(--green)!important;margin-top:8px}.action-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}.btn{border:1px solid var(--line2);background:var(--card2);color:var(--text);border-radius:9px;padding:10px 14px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;gap:8px}.btn:hover{border-color:rgba(36,211,123,.5)}.btn.primary{background:linear-gradient(135deg,#18b96f,#0f766e);border-color:transparent;color:#fff}.btn.danger{background:var(--red);border-color:var(--red);color:#fff}.btn.on.active{background:rgba(22,211,58,.14);border-color:rgba(22,211,58,.46);color:var(--green)}.btn.off.active{background:rgba(255,63,94,.14);border-color:rgba(255,63,94,.46);color:var(--red)}.btn:disabled{opacity:.45;cursor:not-allowed}.manual-layout{display:grid;grid-template-columns:1fr;gap:16px}.manual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}.act-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}.act-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.act-name{font-size:16px;font-weight:950}.act-desc{font-family:var(--mono);font-size:11px;color:var(--soft);line-height:1.6;margin-top:6px}.switches{display:flex;gap:8px;margin-top:18px}.warning-list{display:grid;gap:10px}.warning{padding:12px 14px;border:1px solid rgba(250,204,21,.32);background:rgba(250,204,21,.08);border-radius:11px;color:#fde68a;font-size:13px;line-height:1.5}.warning.critical{border-color:rgba(255,63,94,.43);background:rgba(255,63,94,.10);color:#fecdd3}body.light .warning{color:#92400e}body.light .warning.critical{color:#991b1b}.empty{padding:42px;text-align:center}.empty b{display:block;font-size:20px;margin-bottom:10px}.toast{position:fixed;right:24px;bottom:58px;z-index:500;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:13px 16px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);pointer-events:none;transition:.22s;font-weight:850}.toast.show{opacity:1;transform:translateY(0)}.modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:900;background:rgba(0,0,0,.62);backdrop-filter:blur(5px);padding:18px}.modal-backdrop.show{display:flex}.modal-card{width:min(760px,100%);max-height:90vh;overflow:auto;background:var(--card);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.55);padding:22px}.modal-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:16px}.modal-title{font-size:21px;font-weight:950;letter-spacing:-.03em}.modal-sub{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.6;margin-top:5px}.modal-close{width:36px;height:36px;border-radius:10px;border:1px solid var(--line2);background:var(--card2);color:var(--text);font-size:20px}.unsafe-box{border:1px solid rgba(255,63,94,.45);background:rgba(255,63,94,.11);border-radius:13px;padding:14px;margin:14px 0}.unsafe-box ul{margin:0;padding-left:20px;line-height:1.65}.add-form{display:grid;gap:14px}.mini-table{width:100%;border-collapse:collapse}.mini-table th,.mini-table td{padding:10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;text-align:left}.mini-table th{color:var(--soft);text-transform:uppercase;letter-spacing:.08em}.copyright{font-weight:800}.mobile-nav-toggle{display:none}
+@media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{position:fixed;z-index:800;inset:0 auto 0 0;width:min(306px,86vw);transform:translateX(-105%);transition:.22s}.sidebar.show{transform:translateX(0)}.mobile-nav-toggle{display:inline-flex}.main{grid-template-rows:66px 1fr 42px}.status-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.content{padding:16px}.topbar{padding:0 12px}.top-btn span.label{display:none}.status-strip{grid-template-columns:1fr}.chart-large{height:285px}.page-head{display:block}.form-grid,.manual-grid,.live-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <div class="brand-title">LeafLink</div>
+        <div class="brand-sub">Plant Monitor</div>
+      </div>
+      <div class="brand-arrow">←</div>
+    </div>
+    <div class="nav-scroll">
+      <button class="nav-item active" onclick="toggleAccordion('dashboards-menu')"><span class="nav-ico">⌂</span><span>Dashboards</span><span class="chev open" id="chev-dashboards-menu">›</span></button>
+      <div class="nested open" id="dashboards-menu">
+        <button class="nav-item" onclick="toggleAccordion('plant-menu')"><span class="nav-ico">☘</span><span>Plant</span><span class="chev open" id="chev-plant-menu">›</span></button>
+        <div class="nested open" id="plant-menu"></div>
+        <button class="nav-leaf" id="manual-nav" onclick="openManualMode()"><span class="nav-ico">⚙</span><span>Manual Mode</span></button>
+      </div>
+    </div>
+    <div class="side-footer"><span class="copyright">Capstone 19210 @2026</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="top-btn mobile-nav-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="crumbs">
+        <span class="crumb-main" id="crumb-main">LeafLink</span>
+        <span class="crumb-sub" id="crumb-sub">Dashboard ready</span>
+      </div>
+      <div class="top-actions">
+        <button class="top-btn" id="theme-btn" onclick="toggleTheme()">☾ <span class="label">Dark Mode</span></button>
+        <button class="top-btn" id="alarm-btn" onclick="toggleVoiceAlarm()">🔈 <span class="label">Alarm</span></button>
+        <button class="top-btn save" onclick="saveNow()">💾 <span class="label">Save CSV</span></button>
+      </div>
+    </header>
+
+    <section class="content" id="content"></section>
+    <footer class="footer"><span class="copyright">Copyright © Capstone 19210 @2026</span></footer>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="add-plant-modal" onclick="if(event.target===this) closeAddPlantModal()">
+  <form class="modal-card add-form" onsubmit="addPlantFromForm(event)">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Add Plant</div>
+        <div class="modal-sub">Add a new plant tab with editable setpoints.</div>
+      </div>
+      <button class="modal-close" type="button" onclick="closeAddPlantModal()">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Plant name</label><input id="new-name" required value="New Plant"></div>
+      <div class="field"><label>Icon</label><input id="new-icon" value="🌱" maxlength="8"></div>
+      <div class="field"><label>Card color</label><input id="new-bg" type="color" value="#24d37b"></div>
+      <div class="field"><label>Description</label><input id="new-subtitle" value="Custom plant - tune setpoints from dashboard"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Temp min / max / target</label><div class="range-row"><input type="number" id="new-temp-min" value="18"><input type="number" id="new-temp-max" value="28"></div><input class="target-input" id="new-temp-target" type="number" value="23"></div>
+      <div class="field"><label>Humidity min / max / target</label><div class="range-row"><input type="number" id="new-humidity-min" value="40"><input type="number" id="new-humidity-max" value="70"></div><input class="target-input" id="new-humidity-target" type="number" value="55"></div>
+      <div class="field"><label>Soil min / max / target</label><div class="range-row"><input type="number" id="new-soil-min" value="30"><input type="number" id="new-soil-max" value="60"></div><input class="target-input" id="new-soil-target" type="number" value="45"></div>
+      <div class="field"><label>Light min / max / target</label><div class="range-row"><input type="number" id="new-lux-min" value="15000" step="500"><input type="number" id="new-lux-max" value="60000" step="500"></div><input class="target-input" id="new-lux-target" type="number" value="35000" step="500"></div>
+      <div class="field"><label>Water warning %</label><input id="new-water-warn" type="number" value="25"></div>
+    </div>
+    <div class="action-row">
+      <button type="submit" class="btn primary">Add Plant</button>
+      <button type="button" class="btn" onclick="closeAddPlantModal()">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal-backdrop" id="unsafe-modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Plant safety warning</div>
+        <div class="modal-sub">This manual action can stress or damage the selected plant because the live reading is already at the target, maximum, or minimum setpoint.</div>
+      </div>
+      <button class="modal-close" type="button" onclick="closeUnsafeModal()">×</button>
+    </div>
+    <div class="unsafe-box" id="unsafe-message"></div>
+    <div class="action-row">
+      <button class="btn danger" onclick="confirmUnsafeAction()">Turn ON anyway</button>
+      <button class="btn" onclick="closeUnsafeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MAX_HIST = 180;
+const PARAMS = [
+  { key:'temperature', sp:'temp', label:'Temperature', unit:'°C', color:'#0891ff', fmt:v=>`${v.toFixed(1)}°C` },
+  { key:'humidity', sp:'humidity', label:'Humidity', unit:'%', color:'#38bdf8', fmt:v=>`${v.toFixed(1)}%` },
+  { key:'soil', sp:'soil', label:'Soil Moisture', unit:'%', color:'#24d37b', fmt:v=>`${v.toFixed(1)}%` },
+  { key:'lux', sp:'lux', label:'Light Level', unit:'lux', color:'#ff8a25', fmt:v=>v>=1000?`${(v/1000).toFixed(1)} klux`:`${v.toFixed(0)} lux` },
+  { key:'water', sp:'water_warn', label:'Water Level', unit:'%', color:'#f43f5e', fmt:v=>`${v.toFixed(1)}%` },
+];
+const ACTUATORS = [
+  ['fan','Cooling Fan','Lowers temperature using the cooling fan.'],
+  ['dist_fan','Distribution Fan','Moves air and can lower temperature or humidity.'],
+  ['heater','Heater','Raises temperature. Warning appears if temperature is already target/max.'],
+  ['pump','Water Pump','Raises soil moisture. Warning appears if soil/water is unsafe.'],
+  ['led','LED Grow Light','Controls the LED grow light. No light warnings are shown.'],
+];
+let PLANTS=[], SP=[], histories=[], nodes=[], lastUpdate=[];
+let activePlant=0, activeHardware=0, view='graphs';
+let controlMode='auto', manualActuators={fan:false,dist_fan:false,heater:false,pump:false,led:false};
+let charts={}, voiceEnabled=false, lastSpoken={}, pendingUnsafe=null, lastLog='Not saved yet';
+let selectedVoice=null;
+
+function escapeHtml(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function latest(pi=activePlant){const h=histories[pi]||[];return h[h.length-1]||null;}
+function valueFor(d,p){if(!d)return NaN;if(p.key==='water')return Number(d.water_pct??d.water??0);return Number(d[p.key]);}
+function nowAge(pi){return lastUpdate[pi]?Date.now()-lastUpdate[pi]:null;}
+function plantName(pi=activePlant){return PLANTS[pi]?.name || 'Plant';}
+function plantIcon(pi=activePlant){return PLANTS[pi]?.icon || '🌱';}
+function currentSP(){return SP[activePlant] || {};}
+
+function toggleAccordion(id){const el=$(id);const ch=$('chev-'+id);if(!el)return;el.classList.toggle('open');if(ch)ch.classList.toggle('open');}
+function toggleSidebar(){ $('sidebar')?.classList.toggle('show'); }
+function applyTheme(theme){document.body.classList.toggle('light',theme==='light');localStorage.setItem('leaflink-theme',theme);$('theme-btn').classList.toggle('active',theme!=='light');$('theme-btn').innerHTML = theme==='light' ? '☾ <span class="label">Dark Mode</span>' : '☀ <span class="label">Light Mode</span>';}
+function toggleTheme(){applyTheme(document.body.classList.contains('light')?'dark':'light');}
+
+function chooseCalmVoice(){
+  const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+  const preferred = ['Google UK English Female','Microsoft Zira','Samantha','Google US English','Microsoft Aria','Karen'];
+  for(const name of preferred){const v=voices.find(x=>x.name && x.name.includes(name)); if(v) return v;}
+  return voices.find(v=>/female|zira|samantha|aria|karen|google/i.test(v.name||'')) || voices.find(v=>/^en/i.test(v.lang||'')) || voices[0] || null;
+}
+if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=()=>{selectedVoice=chooseCalmVoice();};}
+function speakCalm(text){
+  if(!voiceEnabled || !('speechSynthesis' in window)) return;
+  selectedVoice = selectedVoice || chooseCalmVoice();
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  if(selectedVoice) u.voice = selectedVoice;
+  u.rate = 0.86; u.pitch = 0.95; u.volume = 0.58;
+  speechSynthesis.speak(u);
+}
+function toggleVoiceAlarm(){
+  voiceEnabled = !voiceEnabled;
+  localStorage.setItem('leaflink-voice',voiceEnabled?'1':'0');
+  updateAlarmButton();
+  if(voiceEnabled) speakCalm('LeafLink alarm is enabled. I will speak only important plant warnings calmly.');
+}
+function updateAlarmButton(){const b=$('alarm-btn');b.classList.toggle('active',voiceEnabled);b.innerHTML=voiceEnabled?'🔊 <span class="label">Alarm On</span>':'🔈 <span class="label">Alarm</span>';}
+function maybeSpeakWarnings(pi,data){
+  const warns = data?.warnings || [];
+  if(!voiceEnabled || !warns.length) return;
+  const w = warns.find(x=>x.severity==='critical') || warns[0];
+  const code = `${pi}:${w.code||w.param||w.msg}`;
+  const now = Date.now();
+  if(lastSpoken[code] && now-lastSpoken[code] < 60000) return;
+  lastSpoken[code] = now;
+  const shortMsg = String(w.msg||'Sensor warning').replace(/ - .*/,'.');
+  speakCalm(`Please check ${plantName(pi)}. ${shortMsg}`);
+}
+
+function ensureState(count){
+  while(SP.length<count) SP.push({}); SP.length=count;
+  while(histories.length<count) histories.push([]); histories.length=count;
+  while(nodes.length<count) nodes.push({}); nodes.length=count;
+  while(lastUpdate.length<count) lastUpdate.push(0); lastUpdate.length=count;
+  if(activePlant>=count) activePlant=0;
+  if(activeHardware>=count) activeHardware=0;
+}
+async function fetchJson(url,opts){const r=await fetch(url,opts); if(!r.ok) throw new Error(await r.text()); return r.json();}
+async function loadPlants(){const data=await fetchJson('/api/plants');PLANTS=data.plants||[];activePlant=Number(data.active_plant||0);activeHardware=activePlant;ensureState(PLANTS.length);PLANTS.forEach((p,i)=>{if(p.setpoints)SP[i]=p.setpoints;});}
+async function fetchPlantState(pi){try{SP[pi]=await fetchJson(`/api/setpoints?plant_id=${pi}`);}catch(e){}try{histories[pi]=(await fetchJson(`/api/history?plant_id=${pi}`)).slice(-MAX_HIST);if(histories[pi].length)lastUpdate[pi]=Date.now();}catch(e){}}
+async function fetchControl(){try{const c=await fetchJson('/api/control');controlMode=c.mode||'auto';manualActuators={...manualActuators,...(c.manual_actuators||{})};}catch(e){}}
+async function fetchAll(){await loadPlants();await Promise.all(PLANTS.map((_,i)=>fetchPlantState(i)));try{nodes=await fetchJson('/api/nodes');}catch(e){}await fetchControl();renderAll();}
+
+function renderPlantMenu(){
+  const menu=$('plant-menu');
+  menu.innerHTML = PLANTS.map((p,i)=>{
+    const open = i===activePlant && view!=='manual';
+    return `<div class="plant-node">
+      <button class="plant-head ${i===activePlant?'active':''}" onclick="selectPlant(${i})"><span class="plant-icon">${escapeHtml(p.icon||'🌱')}</span><span class="plant-name">${escapeHtml(p.name||'Plant')}</span><span class="chev ${open?'open':''}">›</span></button>
+      <div class="nested ${open?'open':''}" id="plant-sub-${i}">
+        <button class="sub-link ${i===activePlant&&view==='graphs'?'active':''}" onclick="openPlantView(${i},'graphs')">Graphs</button>
+        <button class="sub-link ${i===activePlant&&view==='setpoints'?'active':''}" onclick="openPlantView(${i},'setpoints')">Setpoints</button>
+        <button class="sub-link ${i===activePlant&&view==='live'?'active':''}" onclick="openPlantView(${i},'live')">Live Data</button>
+      </div>
+    </div>`;
+  }).join('') + `<button class="nav-leaf" onclick="openAddPlantModal()"><span class="nav-ico">＋</span><span>Add Plant</span></button>`;
+  $('manual-nav').classList.toggle('active',view==='manual');
+}
+function renderCrumbs(){
+  const label = view==='manual' ? 'Manual Mode' : `${plantName(activePlant)} / ${view==='graphs'?'Graphs':view==='setpoints'?'Setpoints':'Live Data'}`;
+  $('crumb-main').textContent = view==='manual' ? 'Global Manual Mode' : plantName(activePlant);
+  $('crumb-sub').textContent = `Dashboards / ${view==='manual'?'Manual Mode':'Plant / '+label}`;
+}
+function renderAll(){renderPlantMenu();renderCrumbs();renderContent();updateAlarmButton();}
+async function selectPlant(i){await openPlantView(i, view==='manual'?'graphs':view);}
+async function openPlantView(i,nextView){activePlant=Number(i);view=nextView;activeHardware=activePlant;try{await fetch('/api/set_active_plant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plant_id:activePlant})});}catch(e){}renderAll();if(window.innerWidth<1100)$('sidebar').classList.remove('show');}
+function openManualMode(){view='manual';renderAll();if(window.innerWidth<1100)$('sidebar').classList.remove('show');}
+
+function systemStatusHtml(){
+  const age = nowAge(activeHardware);
+  const online = age!==null && age < 15000;
+  const stale = age!==null && age >= 15000;
+  const d = latest(activePlant);
+  const warnCount = (d?.warnings||[]).length;
+  const n = nodes[activeHardware] || {};
+  return `<div class="status-strip">
+    <div class="status-card"><div class="status-label">System Status</div><div class="status-value"><span class="dot ${online?'live':stale?'off':'warn'}"></span><span>${online?'Online':stale?'No signal':'Waiting'}</span></div></div>
+    <div class="status-card"><div class="status-label">Active Plant</div><div class="status-value"><span>${plantIcon(activePlant)}</span><span>${escapeHtml(plantName(activePlant))}</span></div></div>
+    <div class="status-card"><div class="status-label">ESP32 Node</div><div class="status-value"><span class="dot ${online?'live':stale?'off':'warn'}"></span><span>${escapeHtml(n.ip||'No IP yet')}</span></div></div>
+    <div class="status-card"><div class="status-label">Control Mode</div><div class="status-value"><span class="dot ${controlMode==='manual'?'warn':'live'}"></span><span>${controlMode==='manual'?'Manual':'Automatic'}</span></div></div>
+    <div class="status-card"><div class="status-label">Warnings</div><div class="status-value"><span class="dot ${warnCount?'off':'live'}"></span><span>${warnCount} active</span></div></div>
+  </div>`;
+}
+function pageHeader(title,sub){return `<div class="page-head"><div class="page-title"><h1>${title}</h1><p>${sub}</p></div></div>`;}
+function waitingHtml(){return `${systemStatusHtml()}<div class="panel empty"><b>Waiting for live ESP32 data...</b><div class="modal-sub">Make sure the ESP32 posts to <span class="mono">http://&lt;PC-IP&gt;:5000/api/data</span>.</div><div class="action-row" style="justify-content:center"><button class="btn primary" onclick="fetchAll()">Refresh</button></div></div>`;}
+function statusFor(p,val,sp){
+  if(!sp) return ['warn','No setpoint'];
+  if(p.key==='lux') return ['ok','Monitored'];
+  if(p.key==='water'){const w=Number(sp.water_warn??25); return val>=w?['ok','Normal']:['danger','Low'];}
+  const r=sp[p.sp]||{};
+  if(val < Number(r.min)) return ['warn','Too Low'];
+  if(val > Number(r.max)) return ['danger','Too High'];
+  return ['ok','Normal'];
+}
+function rangeText(p,sp){
+  if(!sp) return '';
+  if(p.key==='water') return `Warning below ${sp.water_warn??25}%`;
+  const r=sp[p.sp]||{}; return `Min ${r.min} ${p.unit} | Target ${r.target} ${p.unit} | Max ${r.max} ${p.unit}`;
+}
+function gaugePercent(p,val,sp){
+  if(p.key==='water') return clamp(val,0,100);
+  const r=sp[p.sp]||{min:0,max:100};
+  const lo=Number(r.min), hi=Number(r.max);
+  if(hi===lo) return 50;
+  return clamp(((val-lo)/(hi-lo))*100,0,100);
+}
+function renderContent(){
+  Object.values(charts).forEach(c=>c.destroy()); charts={};
+  if(view==='manual'){renderManualMode();return;}
+  const d=latest(activePlant), sp=currentSP();
+  if(!d || !sp.temp){$('content').innerHTML=waitingHtml();return;}
+  if(view==='graphs') renderGraphs(d,sp);
+  else if(view==='setpoints') renderSetpoints(sp);
+  else renderLiveData(d,sp);
+}
+function renderGraphs(d,sp){
+  $('content').innerHTML = `${systemStatusHtml()}${pageHeader('Graphs', 'Large live trends with dashed red min/max setpoint lines and dashed green target lines.')}
+  <div class="graphs-grid">
+    ${PARAMS.map(p=>{
+      const val=valueFor(d,p);
+      return `<div class="graph-card">
+        <div class="graph-top">
+          <div><div class="graph-title">${p.label}</div><div class="graph-reading">Current <span class="graph-value" style="color:${p.color}">${isNaN(val)?'-':p.fmt(val)}</span> · ${rangeText(p,sp)}</div></div>
+          <div class="legend"><span class="leg"><span class="leg-line leg-red"></span>Min / Max</span><span class="leg"><span class="leg-line leg-green"></span>Target</span></div>
+        </div>
+        <div class="chart-large"><canvas id="graph-${p.key}"></canvas></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+  requestAnimationFrame(()=>drawBigGraphs());
+}
+function liveCard(p,d,sp){
+  const val=valueFor(d,p), [cls,label]=statusFor(p,val,sp), pct=gaugePercent(p,val,sp);
+  return `<div class="live-card ${cls==='danger'?'danger':cls==='warn'?'alert':''}">
+    <div class="live-card-head"><div class="sensor-label">${p.label}</div><span class="sensor-badge ${cls==='danger'?'danger':cls==='warn'?'warn':''}">${label}</span></div>
+    <div class="gauge-wrap"><div class="gauge" style="--pct:${pct*3.6}deg;--accent:${p.color}"><div class="gauge-core"><b>${Math.round(pct)}%</b><span>of range</span></div></div></div>
+    <div class="sensor-reading"><strong style="color:${p.color}">${isNaN(val)?'-':p.fmt(val)}</strong></div>
+    <div class="range-note">${rangeText(p,sp)}</div>
+  </div>`;
+}
+function renderLiveData(d,sp){
+  const warnings=(d.warnings||[]);
+  $('content').innerHTML = `${systemStatusHtml()}${pageHeader('Live Data', 'Real-time gauges, percentages, readings, and active warnings for the selected plant.')}
+    <div class="live-grid">${PARAMS.map(p=>liveCard(p,d,sp)).join('')}</div>
+    <div class="panel" style="margin-top:18px"><div class="panel-head"><div><div class="panel-title">Sensor Warnings</div><div class="panel-sub">Voice alarm speaks these calmly when enabled.</div></div><div class="dots">•••</div></div><div class="setpoint-panel"><div class="warning-list">${warnings.length?warnings.map(w=>`<div class="warning ${w.severity==='critical'?'critical':''}">${escapeHtml(w.msg)}</div>`).join(''):'<div class="warning">All live readings are inside their configured limits.</div>'}</div></div></div>`;
+}
+function setpointField(sp,key,label,unit,step){const v=sp[key]||{min:0,max:100,target:50};return `<div class="field"><label>${label} (${unit})</label><div class="range-row"><input id="sp-${key}-min" type="number" step="${step}" value="${v.min}"><span>to</span><input id="sp-${key}-max" type="number" step="${step}" value="${v.max}"></div><input class="target-input" id="sp-${key}-target" type="number" step="${step}" value="${v.target}" title="Target setpoint"></div>`;}
+function renderSetpoints(sp){
+  $('content').innerHTML = `${systemStatusHtml()}${pageHeader('Setpoints', 'Edit the safe min, max, and target values used by automation, graphs, and manual-mode safety warnings.')}
+  <div class="panel"><div class="panel-head"><div><div class="panel-title">Setpoints - ${escapeHtml(plantName(activePlant))}</div><div class="panel-sub">Min/max protect the plant. Target defines the optimal value.</div></div><div class="dots">•••</div></div>
+  <div class="setpoint-panel"><div class="form-grid">
+    ${setpointField(sp,'temp','Temperature','°C',1)}
+    ${setpointField(sp,'humidity','Humidity','%',1)}
+    ${setpointField(sp,'soil','Soil Moisture','%',1)}
+    ${setpointField(sp,'lux','Light','lux',500)}
+    <div class="field"><label>Water warning (%)</label><input id="sp-water_warn" type="number" value="${sp.water_warn??25}"></div>
+  </div><div class="action-row"><button class="btn primary" onclick="saveSetpoints()">Save setpoints</button><button class="btn" onclick="renderContent()">Reset view</button></div></div></div>`;
+}
+function renderManualMode(){
+  const d=latest(activePlant)||{}; const acts=d.actuators||{};
+  $('content').innerHTML = `${systemStatusHtml()}${pageHeader('Global Manual Mode', 'One global actuator page. Unsafe ON actions show a plant-safety warning before the relay is changed.')}
+  <div class="manual-layout">
+    <div class="panel"><div class="panel-head"><div><div class="panel-title">Control Mode</div><div class="panel-sub">Automatic follows sensor/setpoint logic. Manual lets the dashboard control relays safely.</div></div><div class="dots">•••</div></div><div class="setpoint-panel"><div class="action-row"><button class="btn ${controlMode==='auto'?'primary':''}" onclick="setControlMode('auto')">Automatic</button><button class="btn ${controlMode==='manual'?'primary':''}" onclick="setControlMode('manual')">Manual</button></div></div></div>
+    <div class="manual-grid">${ACTUATORS.map(([key,name,desc])=>{const on=controlMode==='manual'?!!manualActuators[key]:!!acts[key];return `<div class="act-card"><div class="act-head"><div><div class="act-name">${name}</div><div class="act-desc">${desc}</div></div><span class="sensor-badge ${on?'':'warn'}">${on?'ON':'OFF'}</span></div><div class="switches"><button class="btn on ${on?'active':''}" ${controlMode==='manual'?'':'disabled'} onclick="setManualActuator('${key}',true)">ON</button><button class="btn off ${!on?'active':''}" ${controlMode==='manual'?'':'disabled'} onclick="setManualActuator('${key}',false)">OFF</button></div></div>`}).join('')}</div>
+  </div>`;
+}
+async function saveSetpoints(){
+  const payload={};
+  for(const k of ['temp','humidity','soil','lux']) payload[k]={min:+$(`sp-${k}-min`).value,max:+$(`sp-${k}-max`).value,target:+$(`sp-${k}-target`).value};
+  payload.water_warn=+$('sp-water_warn').value;
+  try{await fetchJson(`/api/setpoints?plant_id=${activePlant}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});SP[activePlant]={...SP[activePlant],...payload};showToast('✓ Setpoints saved');renderAll();}
+  catch(e){showToast('Setpoint save failed');}
+}
+async function setControlMode(mode){
+  try{const c=await fetchJson('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode})});controlMode=c.mode||mode;manualActuators={...manualActuators,...(c.manual_actuators||{})};showToast(`Mode changed to ${controlMode}`);renderAll();}
+  catch(e){showToast('Control mode update failed');}
+}
+async function setManualActuator(key,state,confirmUnsafe=false){
+  if(controlMode!=='manual') return;
+  const payload={actuator:key,state,confirm_unsafe:confirmUnsafe};
+  const r=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const c=await r.json().catch(()=>({}));
+  if(r.status===409 && c.requires_confirmation){pendingUnsafe={key,state};showUnsafeModal(c.warnings||[]);speakCalm('Warning. This manual action may damage the plant. Please confirm before continuing.');return;}
+  if(!r.ok){showToast(c.error||'Manual control failed');return;}
+  controlMode=c.mode||controlMode;manualActuators={...manualActuators,...(c.manual_actuators||{})};renderAll();
+}
+function showUnsafeModal(warnings){$('unsafe-message').innerHTML=`<ul>${warnings.map(w=>`<li>${escapeHtml(w.msg)}</li>`).join('')}</ul>`;$('unsafe-modal').classList.add('show');}
+function closeUnsafeModal(){pendingUnsafe=null;$('unsafe-modal').classList.remove('show');}
+function confirmUnsafeAction(){if(!pendingUnsafe)return;const a=pendingUnsafe;closeUnsafeModal();setManualActuator(a.key,a.state,true);}
+async function saveNow(){try{await fetch('/api/save_now',{method:'POST'});showToast('💾 Saving CSV now');}catch(e){showToast('CSV save failed');}}
+function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3600);}
+
+function setpointLines(p,sp){
+  if(p.key==='water') return [{value:sp.water_warn,color:'#ff3f5e',label:'Water warning',width:1.6},{value:100,color:'#ff3f5e',label:'Max',width:1.1}];
+  const r=sp[p.sp]||{};
+  return [
+    {value:r.min,color:'#ff3f5e',label:'Min',width:1.25},
+    {value:r.max,color:'#ff3f5e',label:'Max',width:1.25},
+    {value:r.target,color:'#16d33a',label:'Target',width:1.8}
+  ];
+}
+const setpointPlugin={id:'leaflinkSetpointLines',afterDatasetsDraw(chart,args,opt){const lines=opt.lines||[];const {ctx,chartArea,scales}=chart;const y=scales.y;ctx.save();lines.forEach(l=>{const v=Number(l.value);if(isNaN(v))return;const yy=y.getPixelForValue(v);if(yy<chartArea.top||yy>chartArea.bottom)return;ctx.beginPath();ctx.setLineDash([7,5]);ctx.lineWidth=l.width||1;ctx.strokeStyle=l.color;ctx.moveTo(chartArea.left,yy);ctx.lineTo(chartArea.right,yy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=l.color;ctx.font='600 11px JetBrains Mono, monospace';ctx.fillText(l.label||'',chartArea.right-72,yy-6);});ctx.restore();}};
+Chart.register(setpointPlugin);
+function makeGradient(ctx,color){const g=ctx.createLinearGradient(0,0,0,360);g.addColorStop(0,color+'55');g.addColorStop(.55,color+'16');g.addColorStop(1,color+'00');return g;}
+function chartVals(p){return (histories[activePlant]||[]).map(r=>valueFor(r,p)).filter(v=>!isNaN(v));}
+function drawBigGraphs(){
+  const sp=currentSP();
+  PARAMS.forEach(p=>{
+    const el=$(`graph-${p.key}`); if(!el) return;
+    const vals=chartVals(p); if(!vals.length) return;
+    const lines=setpointLines(p,sp); const lineVals=lines.map(l=>Number(l.value)).filter(v=>!isNaN(v));
+    const all=vals.concat(lineVals); const min=Math.min(...all); const max=Math.max(...all); const pad=Math.max((max-min)*.18,1);
+    const ctx=el.getContext('2d');
+    charts[p.key]=new Chart(ctx,{type:'line',data:{labels:vals.map((_,i)=>i+1),datasets:[{label:p.label,data:vals,borderColor:p.color,backgroundColor:makeGradient(ctx,p.color),pointRadius:0,borderWidth:3,tension:.42,fill:true}]},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,14,16,.92)',borderColor:'rgba(255,255,255,.14)',borderWidth:1,titleColor:'#edf7f5',bodyColor:'#edf7f5',displayColors:false},leaflinkSetpointLines:{lines}},scales:{x:{grid:{color:'rgba(255,255,255,.035)'},ticks:{color:'rgba(163,173,177,.55)',maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,.045)'},ticks:{color:'rgba(163,173,177,.62)'},min:min-pad,max:max+pad}}}});
+  });
+}
+function openAddPlantModal(){$('add-plant-modal').classList.add('show');}
+function closeAddPlantModal(){$('add-plant-modal').classList.remove('show');}
+function nval(id){return +$(id).value;}
+async function addPlantFromForm(e){
+  e.preventDefault();
+  const payload={name:$('new-name').value.trim()||'New Plant',icon:$('new-icon').value.trim()||'🌱',bg:$('new-bg').value||'#24d37b',subtitle:$('new-subtitle').value.trim()||'Custom plant - tune setpoints from dashboard',setpoints:{temp:{min:nval('new-temp-min'),max:nval('new-temp-max'),target:nval('new-temp-target')},humidity:{min:nval('new-humidity-min'),max:nval('new-humidity-max'),target:nval('new-humidity-target')},soil:{min:nval('new-soil-min'),max:nval('new-soil-max'),target:nval('new-soil-target')},lux:{min:nval('new-lux-min'),max:nval('new-lux-max'),target:nval('new-lux-target')},water_warn:nval('new-water-warn')}};
+  try{const r=await fetchJson('/api/plants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});closeAddPlantModal();PLANTS=r.plants||PLANTS;activePlant=r.active_plant??activePlant;ensureState(PLANTS.length);await fetchPlantState(activePlant);view='graphs';showToast(`✓ Added ${payload.name}`);renderAll();}
+  catch(err){showToast('Could not add plant');}
+}
+
+const socket = io({transports:['websocket','polling']});
+socket.on('connect',()=>{renderAll();});
+socket.on('disconnect',()=>{renderAll();});
+socket.on('sensor_update',({plant_id,data})=>{const pi=Number(plant_id);ensureState(PLANTS.length);if(!histories[pi])histories[pi]=[];histories[pi].push(data);if(histories[pi].length>MAX_HIST)histories[pi].shift();lastUpdate[pi]=Date.now();maybeSpeakWarnings(pi,data);if(pi===activePlant)renderContent();});
+socket.on('plants_updated',({plants,active_plant})=>{PLANTS=plants||PLANTS;ensureState(PLANTS.length);if(active_plant!==undefined)activePlant=Number(active_plant);PLANTS.forEach((p,i)=>{if(p.setpoints)SP[i]=p.setpoints;});renderAll();});
+socket.on('setpoints_updated',({plant_id,setpoints})=>{SP[Number(plant_id)]=setpoints;if(Number(plant_id)===activePlant)renderAll();});
+socket.on('active_plant_changed',({plant_id})=>{activeHardware=Number(plant_id)||0;renderAll();});
+socket.on('control_updated',({mode,manual_actuators})=>{controlMode=mode||controlMode;manualActuators={...manualActuators,...(manual_actuators||{})};renderAll();});
+socket.on('nodes_status',({nodes:n})=>{nodes=Array.isArray(n)?n:[];renderAll();});
+socket.on('csv_saved',({time,rows})=>{lastLog=time||'saved';showToast(`✓ CSV saved${rows?` (${rows} rows)`:''}`);});
+socket.on('csv_error',({error})=>{showToast(`CSV error: ${error}`);});
+
+(async function init(){
+  applyTheme(localStorage.getItem('leaflink-theme')||'dark');
+  voiceEnabled=localStorage.getItem('leaflink-voice')==='1';updateAlarmButton();
+  selectedVoice=chooseCalmVoice();
+  try{await fetchAll();}catch(e){$('content').innerHTML='<div class="panel empty"><b>Could not load dashboard data.</b><div class="modal-sub">Start the Flask server and refresh.</div></div>';}
+})();
+</script>
+</body>
+</html>

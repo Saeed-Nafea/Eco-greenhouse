@@ -1,0 +1,71 @@
+[
+  {
+    "temp": {
+      "min": 18,
+      "max": 26,
+      "target": 22
+    },
+    "humidity": {
+      "min": 35,
+      "max": 70,
+      "target": 40
+    },
+    "soil": {
+      "min": 15,
+      "max": 30,
+      "target": 22
+    },
+    "lux": {
+      "min": 25000,
+      "max": 60000,
+      "target": 42500
+    },
+    "water_warn": 20
+  },
+  {
+    "temp": {
+      "min": 20,
+      "max": 30,
+      "target": 25
+    },
+    "humidity": {
+      "min": 40,
+      "max": 70,
+      "target": 50
+    },
+    "soil": {
+      "min": 35,
+      "max": 55,
+      "target": 45
+    },
+    "lux": {
+      "min": 30000,
+      "max": 70000,
+      "target": 50000
+    },
+    "water_warn": 25
+  },
+  {
+    "temp": {
+      "min": 24,
+      "max": 32,
+      "target": 25
+    },
+    "humidity": {
+      "min": 45,
+      "max": 70,
+      "target": 55
+    },
+    "soil": {
+      "min": 65,
+      "max": 75,
+      "target": 65
+    },
+    "lux": {
+      "min": 15000,
+      "max": 60000,
+      "target": 37500
+    },
+    "water_warn": 20
+  }
+]
